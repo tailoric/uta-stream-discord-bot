@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-from discord import opus, FFmpegPCMAudio, Embed, colour
+from discord import opus, FFmpegOpusAudio, Embed, colour
 from aiohttp import ClientSession
 import discord.utils
 import lavalink
@@ -185,7 +185,7 @@ class PandaMoe(commands.Cog):
             await ctx.send("couldn't get the current voice channel for playing")
             return
         if not current_voice.is_playing():
-            source = FFmpegPCMAudio(f"{self.panda_moe_url}/stream.mp3")
+            source = await FFmpegOpusAudio.from_probe(f"{self.panda_moe_url}/stream.mp3")
             current_voice.play(source)
             current_song = await self.get_current_song()
             if current_song:
