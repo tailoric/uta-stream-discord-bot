@@ -1,0 +1,10 @@
+{
+    "credentials":
+    {
+        "owner" : 123456789012345,
+        "client-id" : 123456789,
+        "client_secret": "AJS23ASJDAS_123124AS214",
+        "token": "ASDKASLDASDSdas.asdkkasjdkljsldk"
+    },
+    "prefixes" : [".", "!"]
+}

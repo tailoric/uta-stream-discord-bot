@@ -1,0 +1,13 @@
+{
+  "use_lavalink": false,
+  "api_key": null,
+  "dj_role_name": null,
+  "use_dj_role": false,
+  "lavalink_settings": {
+    "host": "127.0.0.1",
+    "port": 2333,
+    "password": "youshallnotpass",
+    "region": "eu",
+    "node-name": "default-node"
+  }
+}
