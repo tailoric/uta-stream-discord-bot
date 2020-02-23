@@ -11,6 +11,7 @@ class PandaMoe(commands.Cog):
     """
     A cog for playing music from https://vivalapanda.moe
     """
+
     def __init__(self, bot, settings):
         self.bot = bot
         self.use_lavalink = settings.get("use_lavalink")
@@ -18,7 +19,8 @@ class PandaMoe(commands.Cog):
         self.dj_role_name = settings.get("dj_role_name")
         self.use_dj_role = settings.get("use_dj_role")
         self.lavalink_settings = settings.get("lavalink_settings")
-        self.panda_moe_url = settings.get("uta_server_url")
+        self.backend_url = settings.get("uta_backend_url")
+        self.frontend_url = settings.get("uta_frontend_url")
 
         if not hasattr(bot, "client_session"):
             self.client_session = ClientSession()
@@ -49,7 +51,6 @@ class PandaMoe(commands.Cog):
                                             f"you are missing the following role {dj_role.name}")
         if self.use_lavalink:
             self.bot.lavalink.players.create(ctx.guild.id, endpoint=str(ctx.guild.region))
-
 
     async def get_current_voice_channel(self, ctx):
         """get the current voice channel the bot is connected to"""
@@ -104,11 +105,12 @@ class PandaMoe(commands.Cog):
         if not current_voice:
             await ctx.send("I am currently not connected to any voice channel")
             return
-        current_song = await self.get_current_song()
-        if current_song:
-            await ctx.send(embed=self.embed_for_current_song(current_song))
+        data = await self.get_current_song()
+        if data:
+            await ctx.send(embed=self.embed_for_current_song(data))
             return
         await ctx.send("Could not fetch current song.")
+
     @commands.command(name="enqueue")
     async def panda_enqueue(self, ctx, url):
         """
@@ -116,7 +118,7 @@ class PandaMoe(commands.Cog):
         """
         params = {"song", url}
         headers = {"Authorization", f"Bearer {self.api_key}"}
-        async with self.client_session.post(f"{self.panda_moe_url}/api/enqueue",
+        async with self.client_session.post(f"{self.backend_url}/api/enqueue",
                                             params=params,
                                             headers=headers) as response:
             if response.status == 200:
@@ -131,7 +133,7 @@ class PandaMoe(commands.Cog):
         skip the current song.
         """
         headers = {"Authorization", f"Bearer {self.api_key}"}
-        async with self.client_session.post(f"{self.panda_moe_url}/api/skip",
+        async with self.client_session.post(f"{self.backend_url}/api/skip",
                                             headers=headers) as response:
             if response.status == 200:
                 await ctx.send("Song skipped.")
@@ -139,12 +141,17 @@ class PandaMoe(commands.Cog):
                 error_message = await response.read()
                 await ctx.send(f"Server replied with the following error message\n{error_message}")
 
-    def embed_for_current_song(self, current_song):
+    def embed_for_current_song(self, data):
         """
         helper function for creating an embed of the current song
         """
-        return Embed(title=current_song.get("title"), url=current_song.get("url"),
-                     colour=colour.Color.blurple())
+        dj = data.get("dj")
+        current_song = data.get("currentSong")
+        embed = Embed(title=current_song.get("title"), url=current_song.get("url"),
+                      colour=colour.Color.blurple())
+        embed.set_author(name=self.frontend_url.replace("https://", ""), url=self.frontend_url)
+        embed.set_footer(text=f"24/7 radio stream | song queued by {dj if dj else 'bot Marukofu'}")
+        return embed
 
     async def connect_to_voice(self, ctx):
         """
@@ -169,12 +176,13 @@ class PandaMoe(commands.Cog):
          """
         player = self.bot.lavalink.players.get(ctx.guild.id)
         if not player.is_playing:
-            results = await player.node.get_tracks(f"{self.panda_moe_url}/stream.mp3")
+            results = await player.node.get_tracks(f"{self.backend_url}/stream.mp3")
             player.add(requester=ctx.author.id, track=results["tracks"][0])
             await player.play()
-            current_song = await self.get_current_song()
-            if current_song:
-                await ctx.send(f"Now playing {self.panda_moe_url} with the song **{current_song.get('title')}**")
+            data = await self.get_current_song()
+            if data:
+                await ctx.send(content=f"Now playing {self.frontend_url} with the song:",
+                               embed=self.embed_for_current_song(data))
 
     async def play_from_ffmpeg(self, ctx):
         """
@@ -185,20 +193,21 @@ class PandaMoe(commands.Cog):
             await ctx.send("couldn't get the current voice channel for playing")
             return
         if not current_voice.is_playing():
-            source = await FFmpegOpusAudio.from_probe(f"{self.panda_moe_url}/stream.mp3")
+            source = await FFmpegOpusAudio.from_probe(f"{self.backend_url}/stream.mp3")
             current_voice.play(source)
             current_song = await self.get_current_song()
             if current_song:
-                await ctx.send(f"Now playing {self.panda_moe_url} with the song **{current_song.get('title')}**")
+                await ctx.send(content=f"Now playing {self.backend_url} with the song:",
+                               embed=self.embed_for_current_song(current_song))
 
     async def get_current_song(self):
         """
         check for the currently playing song
         """
-        async with self.client_session.get(f"{self.panda_moe_url}/api/playing") as response:
+        async with self.client_session.get(f"{self.backend_url}/api/playing") as response:
             if response.status == 200:
                 data = await response.json()
-                return data.get("currentSong", None)
+                return data
             else:
                 return None
 
@@ -209,6 +218,7 @@ class PandaMoe(commands.Cog):
         # The above looks dirty, we could alternatively use `bot.shards[shard_id].ws` but that assumes
         # the bot instance is an AutoShardedBot.
 
+
 def setup(bot):
     if not os.path.exists("config/panda_moe.json"):
         settings = {
@@ -216,7 +226,8 @@ def setup(bot):
             "api_key": None,
             "dj_role_name": None,
             "use_dj_role": False,
-            "uta_server_url": "https://vivalapanda.moe",
+            "uta_backend_url": "https://VivaLaPanda.moe",
+            "uta_frontend_url": "https://VivaLaPanda.moe",
             # using the default settings from
             # https://github.com/Frederikam/Lavalink/blob/master/LavalinkServer/application.yml.example
             "lavalink_settings": {
