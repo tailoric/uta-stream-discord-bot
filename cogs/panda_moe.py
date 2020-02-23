@@ -117,14 +117,14 @@ class PandaMoe(commands.Cog):
         queue a new song, currently only supports direct urls
         """
         params = {"song", url}
-        headers = {"Authorization", f"Bearer {self.api_key}"}
+        headers = {"Authorization": f"Bearer {self.api_key}"}
         async with self.client_session.post(f"{self.backend_url}/api/enqueue",
                                             params=params,
                                             headers=headers) as response:
             if response.status == 200:
                 await ctx.send("Song enqueued successfully")
             else:
-                error_message = await response.read()
+                error_message = await response.text()
                 await ctx.send(f"Server replied with the following error message\n{error_message}")
 
     @commands.command(name="skip")
@@ -132,14 +132,14 @@ class PandaMoe(commands.Cog):
         """
         skip the current song.
         """
-        headers = {"Authorization", f"Bearer {self.api_key}"}
+        headers = {"Authorization": f"Bearer {self.api_key}"}
         async with self.client_session.post(f"{self.backend_url}/api/skip",
                                             headers=headers) as response:
             if response.status == 200:
                 await ctx.send("Song skipped.")
             else:
-                error_message = await response.read()
-                await ctx.send(f"Server replied with the following error message\n{error_message}")
+                error_message = await response.text()
+                await ctx.send(f"Server replied with the following error message\n{str(error_message)}")
 
     def embed_for_current_song(self, data):
         """
