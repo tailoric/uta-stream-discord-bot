@@ -3,6 +3,7 @@
   "api_key": null,
   "dj_role_name": null,
   "use_dj_role": false,
+  "uta_server_url":  "https://vivalapanda.moe",
   "lavalink_settings": {
     "host": "127.0.0.1",
     "port": 2333,

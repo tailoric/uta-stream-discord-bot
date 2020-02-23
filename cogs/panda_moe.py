@@ -18,7 +18,7 @@ class PandaMoe(commands.Cog):
         self.dj_role_name = settings.get("dj_role_name")
         self.use_dj_role = settings.get("use_dj_role")
         self.lavalink_settings = settings.get("lavalink_settings")
-        self.panda_moe_url = "https://vivalapanda.moe"
+        self.panda_moe_url = settings.get("uta_server_url")
 
         if not hasattr(bot, "client_session"):
             self.client_session = ClientSession()
@@ -216,6 +216,7 @@ def setup(bot):
             "api_key": None,
             "dj_role_name": None,
             "use_dj_role": False,
+            "uta_server_url": "https://vivalapanda.moe",
             # using the default settings from
             # https://github.com/Frederikam/Lavalink/blob/master/LavalinkServer/application.yml.example
             "lavalink_settings": {
