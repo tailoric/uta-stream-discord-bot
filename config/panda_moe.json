@@ -1,8 +1,8 @@
 {
   "use_lavalink": false,
   "api_key": null,
-  "dj_role_name": "DJ",
-  "use_dj_role": true,
+  "dj_role_name": null,
+  "use_dj_role": false,
   "uta_backend_url":  "https://VivaLaPanda.moe",
   "uta_frontend_url" : "https://VivaLaPanda.moe",
   "lavalink_settings": {
